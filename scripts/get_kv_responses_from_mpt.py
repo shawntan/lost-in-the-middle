@@ -77,7 +77,7 @@ def main(
         raise ValueError("Unable to find CUDA device with torch. Please use a CUDA device to run this script.")
 
     config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
-    config.attn_config["attn_impl"] = "triton"
+    # config.attn_config["attn_impl"] = "triton"
     config.max_seq_len = 16384  # (input + output) tokens can now be up to 16384
 
     logger.info("Loading tokenizer")
@@ -99,7 +99,7 @@ def main(
         config=config,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
-        torch_dtype=torch.bfloat16,
+        torch_dtype=torch.float16,
         **extra_kwargs,
     )
     # Move model to GPU if we're using single-gpu
@@ -111,7 +111,7 @@ def main(
     do_sample = temperature > 0.0
 
     responses = []
-    with torch.autocast(device, dtype=torch.bfloat16):
+    with torch.autocast(device, dtype=torch.float16):
         for batched_prompts in tqdm(chunks(prompts, batch_size), total=math.ceil(len(prompts) / batch_size)):
             inputs = tokenizer(batched_prompts, return_tensors="pt", padding=True).to(device)
             outputs = model.generate(
@@ -185,7 +185,7 @@ if __name__ == "__main__":
         "--model",
         help="Model to use in generating responses",
         required=True,
-        choices=["mosaicml/mpt-30b-instruct", "mosaicml/mpt-30b"],
+        choices=["mosaicml/mpt-7b-instruct", "mosaicml/mpt-7b"],
     )
     parser.add_argument("--temperature", help="Temperature to use in generation", type=float, default=0.0)
     parser.add_argument("--top-p", help="Top-p to use in generation", type=float, default=1.0)

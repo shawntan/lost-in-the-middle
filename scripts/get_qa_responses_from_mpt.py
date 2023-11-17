@@ -94,6 +94,8 @@ def main(
                     did_format_warn = True
                 prompt = format_instruct_prompt(prompt)
             prompts.append(prompt)
+
+            print(prompt[0])
             examples.append(deepcopy(input_example))
             all_model_documents.append(documents)
 
@@ -125,7 +127,7 @@ def main(
         config=config,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
-        torch_dtype=torch.bfloat16,
+        torch_dtype=torch.float16,
         **extra_kwargs,
     )
     # Move model to GPU if we're using single-gpu
@@ -137,7 +139,7 @@ def main(
     do_sample = temperature > 0.0
 
     responses = []
-    with torch.autocast(device, dtype=torch.bfloat16):
+    with torch.autocast(device, dtype=torch.float16):
         for batched_prompts in tqdm(chunks(prompts, batch_size), total=math.ceil(len(prompts) / batch_size)):
             inputs = tokenizer(batched_prompts, return_tensors="pt", padding=True).to(device)
             outputs = model.generate(
@@ -212,7 +214,8 @@ if __name__ == "__main__":
         "--model",
         help="Model to use in generating responses",
         required=True,
-        choices=["mosaicml/mpt-30b-instruct", "mosaicml/mpt-30b"],
+        # choices=["mosaicml/mpt-6b-instruct", "mosaicml/mpt-7b"],
+        choices=["mosaicml/mpt-7b-instruct", "mosaicml/mpt-7b"],
     )
     parser.add_argument("--temperature", help="Temperature to use in generation", type=float, default=0.0)
     parser.add_argument("--top-p", help="Top-p to use in generation", type=float, default=1.0)
